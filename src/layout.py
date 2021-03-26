@@ -167,6 +167,7 @@ class MainWindowLayout():
             sg.Button(ct.B_UNDO, size=(bw, 1)),
             sg.Button(ct.B_RESIGN, size=(bw, 1)),
             sg.Button(ct.B_RESET, size=(bw, 1)),
+            sg.Button(ct.B_ANNOTATE, size=(bw, 1))
         ]
 
         control_col = sg.Column([row_colors(),

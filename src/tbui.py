@@ -12,6 +12,7 @@ import layout as lt
 import files as fi
 import plot as pt
 import heatmap as hm
+import annotation as at
 import uiboard
 
 from tkinter import ttk
@@ -402,6 +403,16 @@ class TwixtbotUI():
             self.handle_cancel_bot()
         elif event in [ct.K_BOARD[1], ct.B_UNDO, ct.B_RESIGN, ct.B_RESET, ct.B_BOT_MOVE]:
             popup_bot_in_progress()
+    
+    def handle_annotate(self):
+        # todo: select player/bot
+        annotation = at.Annotation(self.game.history,
+                                   self.bots[0], self.bots[1],
+                                   self.stgs.get_setting(ct.K_ALLOW_SCL[1]))
+        sg.popup_ok(annotation.annotate(),
+                    title='Game annotation',
+                    line_width=120,
+                    keep_on_top=True)
 
     def thread_is_alive(self):
         return hasattr(self, 'thread') and self.thread is not None and self.thread.is_alive()
@@ -529,6 +540,8 @@ class TwixtbotUI():
             elif event == ct.K_HEATMAP[1]:
                 # force redraw of board after heatmap checkbox click
                 self.update_after_move()
+            elif event == ct.B_ANNOTATE:
+                self.handle_annotate()
 
 
 # initialize settings from config.json

@@ -129,6 +129,7 @@ B_RESET = "Reset"
 B_APPLY_SAVE = 'Apply & Save'
 B_RESET_DEFAULT = 'Reset to default'
 B_EXIT = "Exit"
+B_ANNOTATE = 'Annotate'
 
 TAB_LABEL_GENERAL = "General"
 TAB_LABEL_PLAYER1 = "Player 1"
