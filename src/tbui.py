@@ -202,14 +202,13 @@ class TwixtbotUI():
         self.get_control(ct.K_MOVES).Update(text)
 
     def calc_eval(self):
-        score, moves, P = self.bots[self.game.turn].nm.eval_game(self.game)
+        self.next_move = self.bots[self.game.turn].nm.eval_game(self.game, self.game.SIZE)
         # get score from white's perspective
-        sc = round((2 * self.game.turn - 1) * score, 3)
-        self.next_move = sc, moves, P
+        sc = round((2 * self.game.turn - 1) * self.next_move[0], 3)
         # Add sc to dict of historical scores
         self.moves_score[len(self.game.history)] = sc
 
-        return sc, moves, P
+        return self.next_move
 
     def clear_evals(self):
         self.get_control(ct.K_EVAL_NUM).Update('')
@@ -373,6 +372,7 @@ class TwixtbotUI():
         import backend.nnmplayer as nnmplayer
         self.bots[2 - player] = nnmplayer.Player(**args)
 
+<<<<<<< HEAD
     def call_bot(self):
         # mcts, or first/second move (we are in a thread)
         response = self.bots[self.game.turn].pick_move(
@@ -383,6 +383,60 @@ class TwixtbotUI():
             # so execute move.
             # execute move must be inside thread!
             self.execute_move(response["moves"][0])
+=======
+    def call_bot_and_move(self):
+        # TODO!
+        """
+>>>>>>> b1c0e6e (Committing temporary state of work)
+        if len(self.game.history) >= 2 and self.get_current(ct.K_TRIALS) == 0 and self.next_move is not None:
+            # we already have the next move from evaluation            
+            response = {
+                "status": "done",
+                "moves": self.next_move[1],
+                "P": self.next_move[2]
+            }
+            
+        else:
+            # mcts, or first/second move       
+            response = self.bots[self.game.turn].pick_move(self.game, self.window, self.bot_event)
+        """
+        logging.debug('Calling pick_move (this needs to be improved)!')
+        # mcts, or first/second move
+        self.bots[self.game.turn].pick_move(
+            self.game, self.window, self.event, 0.0)
+
+        if response["status"] == "done":
+            self.get_control(ct.K_SPINNER).Update(visible=False)
+            if self.bot_event is None or not self.bot_event.is_set() or self.bot_event.get_context() == ct.ACCEPT_EVENT:
+                # bot has not been cancelled (but is finished or accepted)
+                self.execute_move(response["moves"][0])
+                self.update_after_move(False)
+            else:
+                # bot has been cancelled clear progress controls and visits
+                self.update_progress()
+                # reset history_at_root resets tree and visit counts
+                self.bots[self.game.turn].nm.history_at_root = None
+
+                # switch off auto move
+                if self.get_current(ct.K_AUTO_MOVE):
+                    self.set_current(ct.K_AUTO_MOVE, False)
+                    self.get_control(
+                        ct.K_AUTO_MOVE, self.game.turn_to_player()).Update(False)
+
+    def launch_bot(self):
+        
+        if self.get_current(ct.K_TRIALS) > 0:
+            self.visit_plot.update()
+            self.update_progress()            
+            self.window[ct.K_SPINNER[1]].Update(visible=True)
+            # MCTS => async
+            self.bot_event = BotEvent()
+            self.thread = threading.Thread(
+                target=self.call_bot_and_move, args=(), daemon=True)
+    
+            self.timer = pmeter.ETA(100.0, max_seconds=20)
+            self.thread.start()
+>>>>>>> be2d40f (Merged master into code for adjusting bot level)
         else:
             # reset history_at_root resets tree and visit counts
             self.bots[self.game.turn].nm.history_at_root = None
@@ -501,6 +555,27 @@ class TwixtbotUI():
                 len(values["moves"]) > 1):
             self.visit_plot.update(values, max(1, values["max"]))
 
+<<<<<<< HEAD
+=======
+        """ Code adjusted for adjustable bot level, but not needed anymore???
+        if values["status"] == "done":
+            self.get_control(ct.K_SPINNER).Update(visible=False)
+            if not self.event.is_set() or self.event.get_context() == ct.ACCEPT_EVENT:
+                # bot has not been cancelled (but is finished or accepted)
+                print(f'Values: {values}')
+                self.execute_move(values["moves"][0])
+                self.update_after_move()
+            else:
+                # clear progress controls
+                self.update_progress()
+                # switch off auto move
+                if self.get_current(ct.K_AUTO_MOVE):
+                    self.set_current(ct.K_AUTO_MOVE, False)
+                    self.get_control(
+                        ct.K_AUTO_MOVE, self.game.turn_to_player()).Update(False)
+        """
+
+>>>>>>> be2d40f (Merged master into code for adjusting bot level)
     def handle_accept_and_cancel(self, event):
         if event == ct.B_ACCEPT:
             self.handle_accept_bot()
