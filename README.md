@@ -11,8 +11,15 @@ twixtbot-ui comes with all the neccessary twixtbot files in subfolder `./backend
 
 ## Get started
 
-clone or download this repository and make sure you have Python 3.6, 3.7 or 3.8 installed including pip. At the command line, change to the twixtbot-ui directory and install the necessary modules:
+make sure you have Python3 installed. The Python version needs to support tensorflow2. As of March 2021 this is true for Python 3.6, 3.7 and 3.8 (64bit). Do not use Python 3.9. Consider using [virtual environments](https://docs.python.org/3/tutorial/venv.html) to switch between multiple Python versions on your system. To check the current version, use the following commands: 
 
+```
+python --version
+
+python -c "import struct; print( 8 * struct.calcsize('P'))"
+```
+
+Clone or download this repository. At the command line, change to the twixtbot-ui directory and install the necessary modules:
 
 ```
 python -m pip install -r requirements.txt
@@ -30,8 +37,6 @@ python tbui.py
 ```
 
 Ignore the tensorflow warnings and confirm the pop-up message that says that a settings file will be created. Wait a few seconds until the bots have been initialized. You should see the GUI with a clean TwixT board and the control bar on the right:
-
-
 
 
 ![Empty TwixT board](img/EmptyBoard.JPG)
@@ -55,7 +60,20 @@ Note that the network was trained with self-crossing links allowed, which can le
 
 ### Evaluation
 
-Before each move, the bot evaluates the board. The value head of the network returns a value in range [-1.0..1.0] that indicates the probability for a win of player1 and player2, resp. The policy head returns a value in range [0..1] for each legal move. A bar chart shows the top three moves. Parameter *temperature* [0, 0.5, 1.0] influences the policy, i.e. which move is picked. If *temperature* = 0 (default) the move with the highest value will be chosen.
+By default, the evaluation output of the network is displayed after each move. If you do not want to be distracted or influenced you can uncheck the *evaluation* checkbox. This also hides the *MCTS visits* bar chart.
+
+#### value head
+
+After each move, the network evaluates the board. The value head [-1.0..1.0] indicates the probability for a win of player1 and player2, resp. The value is displayed as a float number and as a horizontal bar. Past values are recorded in a history bar chart.<br>
+
+#### policy head
+
+The policy head of the network evaluates each legal move. These p-values in range [0..1] indicate how promising a certain move for the current player is. A bar chart on the right shows the top three moves and their p-values. Switch on the *heatmap* checkbox below the bar chart to visualize all p-values > 0. The bigger and greener the spots, the better the p-value. The color coding is:
++ light green: close to 100% of best p
++ light blue: close to 50% of best p
++ dark blue: close to 0% of best p<br>
+
+![Heatmap](img/Heatmap.JPG)
 
 ### MCTS
 
@@ -69,9 +87,10 @@ Note that for the first move and the swap move the bot does not use MCTS.
 
 human players *swap* by clicking on the first peg. The peg will be replaced by a black peg, mirrored at the diagonal. twixtbot has its own swap policy (see `./backend/swapmodel.py`). The bot will swap any first move on row 7 to 18 plus moves B6, C6, V6, W6, B19, C19, V19, W19.
 
+
 ### Undo, Resign, Reset
 
-Click these buttons to undo the last move, resign a game or start a new game, resp. You cannot click these buttons during MCTS. You cannot undo a move if the game is over. 
+Click these buttons to undo the last move, resign a game or start a new game, resp. You cannot click these buttons during MCTS.
 
 ### File | Settings...
 
@@ -88,6 +107,8 @@ Parameters *auto move* and *trials* can also be changed in the control panel of 
 + *board size*: number of pixels of a side of the board (default: 600)
 + *show labels*: display labels for rows and columns (default: true)
 + *show guidelines*: display lines that lead into the corners (default: false)
++ *show cursor label*: display the coordinates in a tooltip at the mouse cursor (default: false)
++ *highlight last move*: display yellow circle around last peg (default: false)
 + *smart accept*: during MCTS, reduce the max number of trials automatically according to the lead of the best move (default: true)
 
 #### Tab *Player 1 / 2*
@@ -113,13 +134,13 @@ Decrease c<sub>puct</sub> to move the needle towards exploitation, i.e reduce th
 
 [This site](https://medium.com/oracledevs/lessons-from-alphazero-part-3-parameter-tweaking-4dceb78ed1e5) has more details on temperature, dirichlet noise and cpuct.
 
-### File | Open File...
+### Loading and saving games 
 
-You can load games stored in [T1j](http://www.johannes-schwagereit.de/twixt/T1j/index.html) file format (\*.T1) or littlegolem.net format (\*.tsgf). After a game is loaded, the player names and the board are updated and you can continue to play as usual or undo (but not redo) moves. See sample files in folder `./games`. Note that the value of *self crossing links* is applied when loading a game.
+Choose *File -> Open File...* to load games stored in [T1j](http://www.johannes-schwagereit.de/twixt/T1j/index.html) file format (\*.T1) or littlegolem.net format (\*.tsgf). It will take a few seconds to re-calculate the evaluation history. After a game is loaded, the player names and the board are updated and you can continue to play as usual or undo moves. See sample files in folder `./games`. Note that the value of *self crossing links* is applied when loading a game. Choose *File -> Save file...* to save a game in T1J format; tsgf is not supported as a target. 
 
-#### *.T1j
+#### T1J files
 
-All rows except those for moves and player names are ignored. Each game is considered "unswapped" with player 1 to start. You can prepare T1j-like files in an editor: The first 13 lines need to be comments except lines 4 and 5 for the player names. Append one line per move in upper or lower case with *swap* and *resign* being valid moves. Note that these files cannot be read by T1j.
+When reading a T1J file all rows except those for moves and player names are ignored. Each game is considered "unswapped" with player 1 to start. You can prepare T1J-like files in an editor: The first 13 lines need to be comments except lines 4 and 5 for the player names. Append one line per move in upper or lower case with *swap* and *resign* being valid moves. Note that these files cannot be read by T1J.
 
 ```
 #
@@ -142,11 +163,29 @@ H18
 P12
 resign
 ```
- 
-#### *.tsgf
 
-This file format is used when a TwixT game is saved at [littlegolem.net](https://littlegolem.net/jsp/games/gamedetail.jsp?gtid=twixt).
- 
+### Keyboard shortcuts
+
+<table id="verticalalign">
+    <thead>
+        <tr>
+            <th>Menus</th>
+            <th>Buttons</th>
+            <th>Checkboxes</th>
+            <th>Sliders</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td align="left" valign="top"><i>File</i>: <kbd>Alt</kbd>+<kbd>f</kbd><br><i>Help</i>: <kbd>Alt</kbd>+<kbd>h</kbd></td>
+            <td align="left" valign="top"><i>Bot Move</i>: <kbd>Alt</kbd>+<kbd>b</kbd><br><i>Accept</i>: <kbd>Alt</kbd>+<kbd>a</kbd><br><i>Cancel</i>: <kbd>Alt</kbd>+<kbd>c</kbd><br><i>Undo</i>: <kbd>Alt</kbd>+<kbd>u</kbd><br><i>Resign</i>: <kbd>Alt</kbd>+<kbd>g</kbd><br><i>Reset</i>: <kbd>Alt</kbd>+<kbd>r</kbd></td>
+            <td align="left" valign="top"><i>evaluation</i>: <kbd>Alt</kbd>+<kbd>e</kbd><br><i>auto move</i> 1: <kbd>Alt</kbd>+<kbd>1</kbd><br><i>auto move</i> 2: <kbd>Alt</kbd>+<kbd>2</kbd><br><i>heatmap</i>: <kbd>Alt</kbd>+<kbd>m</kbd></td>
+            <td align="left" valign="top"><i>MCTS trials</i> 1: <kbd>Alt</kbd>+<kbd>&#8592</kbd>, <kbd>Alt</kbd>+<kbd>&#8594</kbd><br><i>MCTS trials</i> 2: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>&#8592</kbd>, <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>&#8594</kbd></td>
+        </tr>
+    </tbody>
+</table>
+
+
 ### Contributors
 
 * [agtoever](https://github.com/agtoever)

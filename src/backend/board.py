@@ -157,14 +157,18 @@ class TwixtBoard:
         nho.objects = objs
         # end set_nn_inputs
 
-    def _create_drawn_peg(self, point, coloridx):
+    def _create_drawn_peg(self, point, coloridx, highlight_last_move=False):
         if coloridx == 1:
-            color = self.stgs.get_setting(ct.K_COLOR[1])
+            color = self.stgs.get(ct.K_COLOR[1])
         else:
-            color = self.stgs.get_setting(ct.K_COLOR[2])
+            color = self.stgs.get(ct.K_COLOR[2])
 
-        peg = self.graph.DrawCircle(self._point_to_coords(
-            point), self.peg_radius, color, color)
+        if highlight_last_move:
+            peg = self.graph.DrawCircle(self._point_to_coords(
+                point), self.peg_radius + 1, color, ct.HIGHLIGHT_LAST_MOVE_COLOR, 2)
+        else:
+            peg = self.graph.DrawCircle(self._point_to_coords(
+                point), self.peg_radius, color, color)
         return peg
 
     def create_move_objects(self, game, index):
@@ -183,7 +187,10 @@ class TwixtBoard:
         nho = TBWHistory(move)
         self.history.append(nho)
 
-        nho.objects.append(self._create_drawn_peg(move, color))
+        highlight_last_move = self.stgs.get(
+            ct.K_HIGHLIGHT_LAST_MOVE[1]) and index == len(game.history) - 1
+        nho.objects.append(self._create_drawn_peg(
+            move, color, highlight_last_move))
         self.known_moves.add(move)
 
         for dlink in game.DLINKS:
@@ -197,9 +204,9 @@ class TwixtBoard:
 
     def _create_drawn_link(self, p1, p2, color):
         # carray = [gr.color_rgb(0,0,0), gr.color_rgb(150,150,150), gr.color_rgb(255,0,0)]
-        carray = [self.stgs.get_setting(ct.K_COLOR[2]),
-                  self.stgs.get_setting(ct.K_COLOR[1]),
-                  self.stgs.get_setting(ct.K_COLOR[1])]
+        carray = [self.stgs.get(ct.K_COLOR[2]),
+                  self.stgs.get(ct.K_COLOR[1]),
+                  self.stgs.get(ct.K_COLOR[1])]
 
         line = self.graph.DrawLine(self._point_to_coords(
             p1), self._point_to_coords(p2), carray[color], 5)

@@ -63,8 +63,8 @@ class EvalHistPlot():
 
     def sc_to_color(self, sc):
         if sc > 0:
-            return self.stgs.get_setting(ct.K_COLOR[1])
-        return self.stgs.get_setting(ct.K_COLOR[2])
+            return self.stgs.get(ct.K_COLOR[1])
+        return self.stgs.get(ct.K_COLOR[2])
 
     def update(self, values=None):
         # clear the subplot
@@ -75,14 +75,13 @@ class EvalHistPlot():
             ax1.bar(values.keys(), values.values(),
                     color=list(map(self.sc_to_color, values.values())))
 
+            xmax = max(10, len(values))
+            plt.xlim(-1, xmax)
+            plt.xticks(np.arange(0, xmax, xmax // 6))
+            plt.ylim([-1, 1])
+
         plt.subplots_adjust(left=None, bottom=0.3,
                             right=None, top=0.9, wspace=0, hspace=0)
-
-        xmax = max(10, len(values))
-        plt.xlim(-1, xmax)
-        plt.xticks(np.arange(0, xmax, xmax // 6))
-        plt.ylim([-1, 1])
-
         self.agg.draw()
 
     def prepare(self, canvas):

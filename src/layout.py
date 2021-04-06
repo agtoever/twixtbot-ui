@@ -123,10 +123,19 @@ def row_moves():
                          text_color=ct.OUTPUT_TEXT_COLOR, autoscroll=True,
                          key=ct.K_MOVES[1], disabled=True, size=(28, 6))]
 
+
+def row_eval_show_num():
+    return [text_label(ct.K_SHOW_EVALUATION[0]),
+            sg.Checkbox(text="", enable_events=True, default=ct.K_SHOW_EVALUATION[3],
+                        key=ct.K_SHOW_EVALUATION[1]),
+            text_output(ct.K_EVAL_NUM[1], 7)]
+
+
 def row_heatmap():
     return [text_label(ct.K_HEATMAP[0]),
-                    sg.Checkbox(
+            sg.Checkbox(
         text="", enable_events=True, default=False, key=ct.K_HEATMAP[1],  size=(7 + ct.OFFSET, 1))]
+
 
 class MainWindowLayout():
 
@@ -136,14 +145,10 @@ class MainWindowLayout():
         self.layout = self.build_layout()
 
     def row_eval_bar(self):
-        colors = (self.stgs.get_setting(ct.K_COLOR[1]),
-                  self.stgs.get_setting(ct.K_COLOR[2]))
+        colors = (self.stgs.get(ct.K_COLOR[1]),
+                  self.stgs.get(ct.K_COLOR[2]))
         return [text_label(ct.K_EVAL_BAR[0]), sg.ProgressBar(2000, orientation='h', size=(21.5, 8), key=ct.K_EVAL_BAR[1],
                                                              bar_color=colors)]
-
-    def row_eval_num(self):
-        return [text_label(ct.K_EVAL_NUM[0]),
-                text_output(ct.K_EVAL_NUM[1], 14)]
 
     def row_eval_moves(self):
         return [text_label(ct.K_EVAL_MOVES[0]),
@@ -157,9 +162,9 @@ class MainWindowLayout():
         menu_def = [[ct.ITEM_FILE, [ct.ITEM_OPEN_FILE, ct.ITEM_SAVE_FILE, ct.ITEM_SETTINGS, ct.ITEM_EXIT]],
                     [ct.ITEM_HELP, [ct.ITEM_ABOUT]]]
 
-        button_count = 7
-        bw = int(self.stgs.get_setting(
-            ct.K_BOARD_SIZE[1]) / (button_count * 9))
+        button_count = 6
+        bw = int(self.stgs.get(
+            ct.K_BOARD_SIZE[1]) / (button_count * 10))
         button_row = [
             sg.Button(ct.B_BOT_MOVE, size=(bw, 1), focus=True),
             sg.Button(ct.B_ACCEPT, size=(bw, 1)),
@@ -174,8 +179,8 @@ class MainWindowLayout():
                                  row_names(),
                                  row_turn_indicators(),
                                  row_auto_moves(),
+                                 row_eval_show_num(),
                                  self.row_eval_bar(),
-                                 self.row_eval_num(),
                                  self.row_eval_hist(),
                                  self.row_eval_moves(),
                                  row_heatmap(),
@@ -285,7 +290,7 @@ def st_tab_player(player):
             st_row_random_rotation(player),
             row_separator("   MCTS"),
             st_row_trials(player),
-            st_row_smart_root(player),
+            # st_row_smart_root(player),  # removed for now
             st_row_temperature(player),
             st_row_add_noise(player),
             st_row_cpuct(player),
@@ -311,6 +316,10 @@ class SettingsDialogLayout():
                            sg.Checkbox(text=None, default=ct.K_SHOW_LABELS[3], key=ct.K_SHOW_LABELS[1])],
                           [st_label(ct.K_SHOW_GUIDELINES[0]),
                            sg.Checkbox(text=None, default=ct.K_SHOW_GUIDELINES[3], key=ct.K_SHOW_GUIDELINES[1])],
+                          [st_label(ct.K_SHOW_CURSOR_LABEL[0]),
+                           sg.Checkbox(text=None, default=ct.K_SHOW_CURSOR_LABEL[3], key=ct.K_SHOW_CURSOR_LABEL[1])],
+                          [st_label(ct.K_HIGHLIGHT_LAST_MOVE[0]),
+                           sg.Checkbox(text=None, default=ct.K_HIGHLIGHT_LAST_MOVE[3], key=ct.K_HIGHLIGHT_LAST_MOVE[1])],
                           row_separator(""),
                           st_row_smart_accept()
 
@@ -362,6 +371,24 @@ class AboutDialogLayout():
         ]
 
         return layout
+
+    def get_layout(self):
+        return self.layout
+
+
+class SplashScreenLayout():
+    def __init__(self):
+        width = 35
+        self.layout = [
+            [sg.ProgressBar(100, orientation='h', size=(30, 20),
+                            # 'default', 'winnative', 'clam', 'alt', 'classic', 'vista', 'xpnative'
+                            # relief='RELIEF_RIDGE',
+                            key=ct.K_SPLASH_PROGRESS_BAR[0],
+                            style='clam',
+                            bar_color=(ct.PROGRESS_BAR_COLOR, 'lightslategrey'))],
+            [sg.Text("", size=(width, 1), key=ct.K_SPLASH_STATUS_TEXT[0],
+                     background_color=sg.theme_background_color(), text_color=ct.OUTPUT_TEXT_COLOR)],
+        ]
 
     def get_layout(self):
         return self.layout
