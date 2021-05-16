@@ -60,12 +60,18 @@ def _P1k(P):
     """Scale P list from [0.0, 1.0] to [0, 1000]"""
     return [int(round(1000 * p)) for p in P]
 
+
 def transform_bot_strength(w):
     if w < 0.0001:
         return 0.0001
     if w > 0.99:
         return 0.99
     return w
+
+
+def _P1k(P):
+    """Scale P list from [0.0, 1.0] to [0, 1000]"""
+    return [int(round(1000 * p)) for p in P]
 
 
 class Player:
@@ -117,8 +123,6 @@ class Player:
         self.cpuct = float(kwargs.get('cpuct', 1))
         self.board = kwargs.get('board', None)
         self.evaluator = kwargs.get('evaluator', None)
-
-        self.cached_game_eval = {}
 
         if self.temperature not in (0.0, 0.5, 1.0):
             raise ValueError("Unsupported temperature")
@@ -218,8 +222,6 @@ class Player:
             # else:
             #   didn't want to swap => compute move
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         if self.num_trials == 0:
             # don't use MCTS but just evaluate and return best move
             _, moves, P = self.nm.eval_game(game)
@@ -228,61 +230,16 @@ class Player:
                                            P=[int(round(p * 1000)) for p in P])
 
         N = self.nm.mcts(game, self.num_trials, window, event)
-=======
-=======
->>>>>>> 45893d1 (Merge of master info adjust bot level (again))
-        if self.trials == 0 or not use_mcts:
-            # don't use MCTS
-            selected_move = _select_move(moves, P, bot_strength)
-            self.nm.send_message(window, game, "done", 0, 0, moves=moves,
-                                 P=P, selected_move=selected_move)
-            return (score, moves, P, selected_move)
->>>>>>> be2d40f (Merged master into code for adjusting bot level)
-
-        N = self.nm.mcts(game, self.trials, window, event)
-=======
-        if self.num_trials == 0:
-            # don't use MCTS but just evaluate and return best move
-            _, moves, P = self.nm.eval_game(game)
-            self.nm.send_message(window, game, "done", 0,
-                                 0, moves=moves, P=[int(round(p * 1000)) for p in P])
-
-            # TODO: implement bot weakness (using parameter w)
-            # Idea:
-            # - w has a value from 0 (no weakness) to 1 (max. weakness)
-            # - w = 0 means strongest play;
-            #   w = 1 means weakest play = uniform random choice of move
-            #   from any of the moves considered. 
-            # *** FOR NN PLAY (WITHOUT MCTS) ***
-            # - Transform P to probability weights w = P ^ (1/(1-w))
-            #   this gives weights [1,0,0,0...] for w = 0
-            #   and weights [1/n,1/n, ..., 1/n] for w = 1
-            import random
-            w = transform_bot_strength(bot_strength)
-            p = normalize(P)**(w/(1-w))
-            move = random.choices(moves,weights=p)[0]
-            print(f'moves: {moves}\nP: {P}\nw: {w}\np: {p}\nmove: {move}')
-            return move
-            # return moves[0]
-
-        N = self.nm.mcts(game, self.num_trials, window, event)
->>>>>>> 43a1dcb (Committing temporary state of work on adjusting bot strength)
         self.report = self.nm.report
 
         # When a forcing win or forcing draw move is found, there's no policy
         # array returned
         if isinstance(N, (str, twixt.Point)):
-<<<<<<< HEAD
-            return self.nm.create_response(game, "done", self.num_trials,
-                                           self.num_trials, True,
-                                           P=[1000, 0, 0])
-=======
             P = [1000, 0, 0]
             self.nm.send_message(window, game, "done", self.trials,
                                  self.trials, True, P=[1000], moves=[N],
                                  selected_move=N)
             return (score, [N], [1000], N)
->>>>>>> be2d40f (Merged master into code for adjusting bot level)
 
         """
         if self.temperature == 0.0:
@@ -292,18 +249,8 @@ class Player:
             weights = N
         elif self.temperature == 0.5:
             weights = N ** 2
-<<<<<<< HEAD
+
         self.logger.debug("weights=%s", weights)
-
-        # flake8 said index isn't used. Not sure why this code is here.
-        # Just to be sure: commenting out the code instead of deleting:
-        # index = numpy.random.choice(numpy.arange(
-        #     len(weights)), p=weights / weights.sum())
-
-        return self.nm.create_response(game, "done", self.num_trials,
-                                       self.num_trials, False)
-=======
-        self.logger.info("weights=%s", weights)
         index = numpy.random.choice(numpy.arange(
             len(weights)), p=weights / weights.sum())
 
@@ -316,4 +263,3 @@ class Player:
         self.nm.send_message(window, game, "done", 0, 0, moves=moves,
                              P=_P1k(P), selected_move=selected_move)
         return (score, moves, _P1k(P), selected_move)
->>>>>>> be2d40f (Merged master into code for adjusting bot level)
