@@ -186,7 +186,7 @@ class Game:
 
     def clone(self):
 
-        copy = Game()
+        copy = Game(self.allow_scl)
         copy.history = list(self.history)
         copy.pegs = numpy.array(self.pegs)
         copy.links = numpy.array(self.links)
@@ -528,7 +528,6 @@ class Game:
             return False
 
     def __str__(self):
-
         topline = "   " + "   ".join([chr(ord('A') + i)
                                       for i in range(Game.SIZE)]) + "\n"
         out = topline
@@ -538,6 +537,12 @@ class Game:
             out += self._str_peg_row(y)
         out += topline
         return out
+
+    def __hash__(self):
+        return hash(''.join(map(str, [self.allow_scl] + self.history)))
+
+    def __eq__(self, o):
+        return hash(self) == hash(o)
 
     def _str_peg_row(self, y):
 
