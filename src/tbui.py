@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import threading
+import time
+from tkinter import ttk
 import backend.twixt as twixt
+import constants as ct
+import files as fi
+import heatmap as hm
+import layout as lt
+import plot as pt
+import settings as st
+import uiboard
 import util.pmeter as pmeter
 
-import constants as ct
-import settings as st
-import layout as lt
-import files as fi
-import plot as pt
-import heatmap as hm
-import uiboard
-
-from tkinter import ttk
+BOT_STRENGTH = 0.01
 
 import PySimpleGUI as sg
 import threading
@@ -202,9 +204,12 @@ class TwixtbotUI():
         self.get_control(ct.K_MOVES).Update(text)
 
     def calc_eval(self):
-        self.next_move = self.bots[self.game.turn].nm.eval_game(self.game)  # TODO , self.game.SIZE)
+        self.next_move = self.bots[self.game.turn].eval_game(
+            self.game, BOT_STRENGTH)
+
         # get score from white's perspective
         sc = round((2 * self.game.turn - 1) * self.next_move[0], 3)
+
         # Add sc to dict of historical scores
         self.moves_score[len(self.game.history)] = sc
 
@@ -224,13 +229,14 @@ class TwixtbotUI():
             return
 
         if not self.game_over(False):
-            sc, moves, P = self.calc_eval()
+            sc, moves, P, _ = self.calc_eval()
 
             self.get_control(ct.K_EVAL_NUM).Update(sc)
             self.get_control(ct.K_EVAL_BAR).Update(1000 * sc + 1000)
 
             # update chart
-            values = {"moves": moves, "Y": P}
+            values = {"moves": moves[:ct.PLOT_NUM_ITEMS],
+                      "Y": P[:ct.PLOT_NUM_ITEMS]}
             self.eval_moves_plot.update(values, 1000)
 
         # clean visits
@@ -355,7 +361,6 @@ class TwixtbotUI():
                     ct.K_VISUALIZE_MCTS).get()
 
     def init_bot(self, player, evaluator=None):
-
         args = {
             "allow_swap": self.stgs.get(ct.K_ALLOW_SWAP[1]),
             "model": self.stgs.get(ct.K_MODEL_FOLDER[player]),
@@ -372,7 +377,6 @@ class TwixtbotUI():
         import backend.nnmplayer as nnmplayer
         self.bots[2 - player] = nnmplayer.Player(**args)
 
-<<<<<<< HEAD
     def call_bot(self):
         # mcts, or first/second move (we are in a thread)
         response = self.bots[self.game.turn].pick_move(
@@ -383,11 +387,8 @@ class TwixtbotUI():
             # so execute move.
             # execute move must be inside thread!
             self.execute_move(response["moves"][0])
-=======
+
     def call_bot_and_move(self):
-        # TODO!
-        """
->>>>>>> b1c0e6e (Committing temporary state of work)
         if len(self.game.history) >= 2 and self.get_current(ct.K_TRIALS) == 0 and self.next_move is not None:
             # we already have the next move from evaluation            
             response = {
@@ -422,6 +423,20 @@ class TwixtbotUI():
                     self.set_current(ct.K_AUTO_MOVE, False)
                     self.get_control(
                         ct.K_AUTO_MOVE, self.game.turn_to_player()).Update(False)
+        """
+
+    def bot_move(self):
+        self.bots[self.game.turn].eval_game(
+            self.game, bot_strength=BOT_STRENGTH,
+            use_mcts=True, window=self.window, event=self.bot_event)
+
+        # TODO: SEE CALLS TO eval_game at the following points:
+        # - in __init__ (lines 124/125)
+        # - in calc_eval (line 190)
+        # INSTEAD OF CALLING nm.eval_game, on those places we should call eval_game
+
+        # TODO:
+        # remove all refs to next_move
 
     def launch_bot(self):
         
@@ -555,15 +570,13 @@ class TwixtbotUI():
                 len(values["moves"]) > 1):
             self.visit_plot.update(values, max(1, values["max"]))
 
-<<<<<<< HEAD
-=======
         """ Code adjusted for adjustable bot level, but not needed anymore???
         if values["status"] == "done":
             self.get_control(ct.K_SPINNER).Update(visible=False)
             if not self.event.is_set() or self.event.get_context() == ct.ACCEPT_EVENT:
                 # bot has not been cancelled (but is finished or accepted)
-                print(f'Values: {values}')
-                self.execute_move(values["moves"][0])
+                # print(f'Values: {values}')
+                self.execute_move(values["selected_move"])
                 self.update_after_move()
             else:
                 # clear progress controls
@@ -575,7 +588,6 @@ class TwixtbotUI():
                         ct.K_AUTO_MOVE, self.game.turn_to_player()).Update(False)
         """
 
->>>>>>> be2d40f (Merged master into code for adjusting bot level)
     def handle_accept_and_cancel(self, event):
         if event == ct.B_ACCEPT:
             self.handle_accept_bot()

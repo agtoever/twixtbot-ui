@@ -1,3 +1,6 @@
 {
+<<<<<<< HEAD
     "python.pythonPath": "/usr/local/Cellar/python@3.8/3.8.9/Frameworks/Python.framework/Versions/3.8/bin/python3.8"
+=======
+>>>>>>> e0944b9 (Rough working concept of bot strength)
 }

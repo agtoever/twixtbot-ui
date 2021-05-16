@@ -24,7 +24,6 @@ class EvalNode:
 
 
 class NeuralMCTS:
-
     def __init__(self, sap, **kwargs):
         """ sap = score and policy function, takes a game as input """
         self.cpuct = kwargs.pop("cpuct", 1.0)
@@ -41,6 +40,7 @@ class NeuralMCTS:
         self.root = None
         self.history_at_root = None
         self.logger = logging.getLogger(ct.LOGGER)
+        self.cached_game_eval = {}
 
     def expand_leaf(self, game):
         """ Create a brand new leaf node for the current game state
@@ -217,15 +217,19 @@ class NeuralMCTS:
                for index in indices[-3:]]
         return ":" + ",".join(pts)
 
-    def eval_game(self, game, maxbest=twixt.MAXBEST):
+    def eval_game(self, game):  # , maxbest=twixt.MAXBEST):
+        # Evaluate game; use cached data if possible. Cache if calculated.
+        if hash(game) in self.cached_game_eval:
+            return self.cached_game_eval[hash(game)]
 
         self.compute_root(game)
         # assert self.root == None
         self.root = self.expand_leaf(game)
-        top_ixs = numpy.argsort(self.root.P)[-maxbest:]
+        top_ixs = numpy.argsort(self.root.P)  # [-maxbest:]
         moves = [naf.policy_index_point(game, ix) for ix in top_ixs][::-1]
         P = [int(round(self.root.P[ix] * 1000)) for ix in top_ixs][::-1]
         self.logger.debug("moves: %s, idx: %s", moves, top_ixs)
+        self.cached_game_eval[hash(game)] = self.root.score, moves, P
         return self.root.score, moves, P
 
     def proven_result(self, game):
@@ -263,6 +267,32 @@ class NeuralMCTS:
             # resp["Q"] = self.root.Q[indices].tolist()
         else:
             resp["moves"] = moves
+    def send_message(self, window, game, status, num_trials=0, current_trials=0, proven=False, moves=None, P=None, selected_move=None):
+
+        if window:
+            resp = {
+                "status": status,
+                "current": current_trials,
+                "max": num_trials,
+                "proven": proven
+            }
+
+            if P is not None:
+                resp["P"] = P.tolist() if type(P) != list else P
+
+            if not moves:
+                indices = numpy.argsort(self.root.N)[::-1][:twixt.MAXBEST]
+                resp["moves"] = [naf.policy_index_point(
+                    game.turn, i) for i in indices]
+                resp["Y"] = [int(n) for n in self.root.N[indices].tolist()]
+                resp["P"] = [int(round(p * 1000))
+                             for p in self.root.P[indices].tolist()]
+                # resp["Q"] = self.root.Q[indices].tolist()
+            else:
+                resp["moves"] = moves
+            
+            if selected_move:
+                resp["selected_move"] = selected_move
 
         return resp
 

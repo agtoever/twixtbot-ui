@@ -18,6 +18,7 @@ GUIDELINE_COLOR = "#b3b3b3"
 PLOT_LABEL_COLOR = "black"
 PLOT_LABEL_FONT = ("Arial", 9)
 VISITS_LABEL_FONT = ("Arial", 8)
+PLOT_NUM_ITEMS = 3
 OUTPUT_BACKGROUND_COLOR = "slate grey"
 OUTPUT_TEXT_COLOR = "white"
 COLOR_LIST = ["black", "blue", "cyan", "orange",
