@@ -92,7 +92,7 @@ K_SMART_ACCEPT = ['smart accept', 'SMART_ACCEPT', None, True]
 K_RESIGN_THRESHOLD = ['resign threshold', 'RESIGN_THRESHOLD', None, 0.95]
 
 K_LOG_LEVEL = ['Log level', 'LOG_LEVEL', None,
-               logging.getLevelName(logging.ERROR)]
+               logging.getLevelName(logging.DEBUG)]  # ERROR)]
 
 # keys - non-setting
 K_BOARD = [None, 'BOARD']

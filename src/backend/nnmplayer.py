@@ -28,11 +28,13 @@ import backend.swapmodel as swapmodel
 import backend.twixt as twixt
 
 
-def _select_move(moves, P, bot_strength):
-    """ Returns a move based on moves, P and bot_strength
+def _select_move(moves, P, bot_strength=1.0):
+    """ Returns a move from moves, based on P and bot_strength (0..1)
 
     Note:
-        A bot_strength < 1.0 results in non-deterministic behaviour
+        A bot_strength < 1.0 results in non-deterministic
+        (e.g.: 'random') behaviour: calling _select_move() with the
+        same arguments will probably (pun) lead to a different result
 
     Args:
         moves (List(twixt.Point)): sorted list of moves; best first
@@ -48,13 +50,14 @@ def _select_move(moves, P, bot_strength):
 
     # Normalize P
     Parr = numpy.array(P)
-    Pnorm = (Parr/sum(Parr))**(w/(1-w))
+    Pnorm = (Parr / sum(Parr)) ** (w / (1 - w))
 
     # Return P-weighted choice from moves
     sel_move = random.choices(moves, weights=Pnorm)[0]
     print(f'selected move: {sel_move} ({moves.index(sel_move)}-best choice)')
     print(f'Top 10 moves + P: {dict(zip(moves[:10], P[:10]))}')
     return sel_move
+
 
 def _P1k(P):
     """Scale P list from [0.0, 1.0] to [0, 1000]"""
@@ -67,11 +70,6 @@ def transform_bot_strength(w):
     if w > 0.99:
         return 0.99
     return w
-
-
-def _P1k(P):
-    """Scale P list from [0.0, 1.0] to [0, 1000]"""
-    return [int(round(1000 * p)) for p in P]
 
 
 class Player:
@@ -113,7 +111,7 @@ class Player:
         """
         self.logger = logging.getLogger(ct.LOGGER)
         self.model = kwargs.get('model', None)
-        self.trials = int(kwargs.get('trials', 100))
+        self.num_trials = int(kwargs.get('trials', 100))
         self.temperature = float(kwargs.get('temperature', 0))
         self.random_rotation = int(kwargs.get('random_rotation', 0))
 
@@ -166,11 +164,12 @@ class Player:
                   game: twixt.Game,
                   window=None,
                   event=None):
+        """ DEPRICATED: The pick_move() interface is replaced by eval_game()
+        """
         raise NotImplementedError
 
-    def eval_game(self, game: twixt.Game,
-                  bot_strength=1.0, use_mcts=False,
-                  window=None, event=None):
+    def eval_game(self, game: twixt.Game, window,
+                  event=None, bot_strength=1.0, use_mcts=False):
         """ Let the robot evaluate the game and return game statistics.
 
         Notes:
@@ -207,8 +206,6 @@ class Player:
                 m = [swapmodel.choose_first_move()] + moves
                 P = [1000] + P
                 selected_move = _select_move(m, P, bot_strength)
-                self.nm.send_message(window, game, "done", moves=m, P=P,
-                                     selected_move=selected_move)
                 return (score, m, P, selected_move)
 
             elif swapmodel.want_swap(game.history[0]):
@@ -216,8 +213,6 @@ class Player:
                 m = [twixt.SWAP] + moves
                 P = [1000] + P
                 selected_move = _select_move(m, P, bot_strength)
-                self.nm.send_message(window, game, "done", moves=m, P=P,
-                                     selected_move=selected_move)
                 return (score, m, P, selected_move)
             # else:
             #   didn't want to swap => compute move
@@ -236,8 +231,8 @@ class Player:
         # array returned
         if isinstance(N, (str, twixt.Point)):
             P = [1000, 0, 0]
-            self.nm.send_message(window, game, "done", self.trials,
-                                 self.trials, True, P=[1000], moves=[N],
+            self.nm.send_message(window, game, "done", self.num_trials,
+                                 self.num_trials, True, P=[1000], moves=[N],
                                  selected_move=N)
             return (score, [N], [1000], N)
 
@@ -254,12 +249,14 @@ class Player:
         index = numpy.random.choice(numpy.arange(
             len(weights)), p=weights / weights.sum())
 
-        self.nm.send_message(window, game, "done", self.trials,
-                             self.trials, False)
+        self.nm.send_message(window, game, "done", self.num_trials,
+                             self.num_trials, False)
         """
 
         moves = [naf.policy_index_point(game, idx) for idx in range(len(N))]
         selected_move = _select_move(moves, N, bot_strength)
+        """ Not sure what's going on here, but I think it can be discarted
         self.nm.send_message(window, game, "done", 0, 0, moves=moves,
                              P=_P1k(P), selected_move=selected_move)
+        """
         return (score, moves, _P1k(P), selected_move)

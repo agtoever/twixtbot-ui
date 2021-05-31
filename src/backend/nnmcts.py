@@ -267,32 +267,6 @@ class NeuralMCTS:
             # resp["Q"] = self.root.Q[indices].tolist()
         else:
             resp["moves"] = moves
-    def send_message(self, window, game, status, num_trials=0, current_trials=0, proven=False, moves=None, P=None, selected_move=None):
-
-        if window:
-            resp = {
-                "status": status,
-                "current": current_trials,
-                "max": num_trials,
-                "proven": proven
-            }
-
-            if P is not None:
-                resp["P"] = P.tolist() if type(P) != list else P
-
-            if not moves:
-                indices = numpy.argsort(self.root.N)[::-1][:twixt.MAXBEST]
-                resp["moves"] = [naf.policy_index_point(
-                    game.turn, i) for i in indices]
-                resp["Y"] = [int(n) for n in self.root.N[indices].tolist()]
-                resp["P"] = [int(round(p * 1000))
-                             for p in self.root.P[indices].tolist()]
-                # resp["Q"] = self.root.Q[indices].tolist()
-            else:
-                resp["moves"] = moves
-            
-            if selected_move:
-                resp["selected_move"] = selected_move
 
         return resp
 
@@ -327,7 +301,7 @@ class NeuralMCTS:
                 if self.root.proven:
                     break
 
-                if event is not None and event.is_set():
+                if event and event.is_set():
                     break
 
                 if (i + 1) % ct.MCTS_TRIAL_CHUNK == 0:
